@@ -14,6 +14,8 @@ Arduino::Arduino(QObject *parent)
 	//QObject::connect(m_qwebsocketServer, &QWebSocketServer::closed, this, &Arduino::closed);
 
 	internal_handleWebSocketServerState();
+
+	connect();
 }
 
 Arduino::~Arduino()
