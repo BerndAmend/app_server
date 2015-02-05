@@ -1,0 +1,131 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<style>
+			* { margin:0; padding:0; } // Die Website umgebenen Ränder deaktivieren
+
+			html, body { width:100%; height:100%; } // Sicherstellen das diese die Fläche der Website komplett ausfüllen
+
+			canvas { display:block; } // Scrollbar ausblenden
+		</style>
+	</head>
+	<body>
+		<canvas id="myCanvas"></canvas>
+		<script>
+			var socket = new WebSocket("ws://" + location.hostname + ":55777");
+			var canvas = document.getElementById('myCanvas');
+			var ctx = canvas.getContext('2d');
+			
+			function updateDevice(x, y) {
+				var distance_between_servos_mm = 250;
+				var rod_length_mm = 350;
+
+				var rod_0_0_deg = 16800;
+				var rod_0_90_deg = 31960;
+
+				var rod_1_0_deg = 32900;
+				var rod_1_90_deg = 18250;
+			
+				x = x*250;
+				y = y*200 + 30;
+				var alpha1 = Math.atan(y/x);
+				var alpha2 = Math.atan(y/(distance_between_servos_mm - x));
+				var alpha1_factor = (alpha1/(Math.PI/2));
+				var alpha2_factor = (alpha2/(Math.PI/2));
+				var servo1 = Math.round((rod_0_90_deg-rod_0_0_deg)*alpha1_factor + rod_0_0_deg);
+				var servo2 = Math.round((rod_1_90_deg-rod_1_0_deg)*alpha2_factor + rod_1_0_deg);
+				var command = "#0 p" + servo1 + " #2 p" + servo2;
+				socket.send(command);
+			}
+			
+			function drawBackground() {
+				// Hintergrund grau einfärben
+				ctx.fillStyle="#f0f0f0";
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+			}
+			
+			function updatePos(evt) {
+				// Korrekte Position innerhalb des Canvas berechnen.
+				// Mit dem hier verwendeten css würde es auch ohne die folgenden 3 Zeilen funktionieren.
+				var rect = canvas.getBoundingClientRect();
+				var x = evt.clientX - rect.left;
+				var y = evt.clientY - rect.top;
+			
+				// Koordinaten auf den Bereich zwischen 0..1 normalisieren.
+				var x_pos = 1.0 - x / canvas.width;
+				var y_pos = 1.0 - y / canvas.height;
+				
+				// Werte außerhalb des Fensters ignorieren
+				if(x_pos < 0.0 || y_pos < 0.0 || x_pos > 1.0 || y_pos > 1.0)
+					return;
+					
+				
+				// Funktion aufrufen die sich um die wirkliche Ansteuerung kümmert.
+				updateDevice(x_pos, y_pos);
+				
+				drawBackground();
+				
+				// xxx, yyy Nachricht erzeugen
+				var message = Math.floor(x) + ',' + Math.floor(y);
+				// und auf dem Bildschirm anzeigen
+				ctx.font = '18pt Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif';
+				ctx.fillStyle = 'black';
+				ctx.fillText(message, 10, 25);
+				
+				// Hellblauen Kreis zeichnen
+				ctx.beginPath();
+				ctx.arc(x, y, 20, 0, 2 * Math.PI, false);
+				ctx.fillStyle = "rgba(0, 0, 200, 0.2)";
+				ctx.fill();
+				// Blauen Kreisrand zeichnen
+				ctx.lineWidth = 2.0;
+				ctx.strokeStyle = "rgba(0, 0, 200, 0.8)";
+				ctx.stroke();
+			}
+			
+			function resizeCanvas() {
+				// Canvas an die Größe des Browserfensters anpassen.
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+				
+				drawBackground();
+			}
+			
+			var mouse_pressed = false;
+
+			// Mausereignisse behandeln
+			canvas.addEventListener('mouseup', function(evt) {
+				mouse_pressed = false;
+			}, false);
+			canvas.addEventListener('mousedown', function(evt) {
+				mouse_pressed = true;
+				updatePos(evt);
+			}, false);
+			canvas.addEventListener('mousemove', function(evt) {
+				if(mouse_pressed)  {
+					updatePos(evt);
+				}
+			}, false);
+			
+			// Touch-Ereignisse behandeln, dies ist wichtig für Smartphones und Tablets.
+			canvas.addEventListener('touchmove', function(event) {
+				if(event.targetTouches.length >= 1) {
+					// Wir verwenden das erstbeste Touch-Ereignis.
+					var touch = event.targetTouches[0];
+					updatePos(touch);
+				}
+
+				// Standardverhalten des Browsers verhindern
+				// Dieser würde normalerweise die Berührung als Scrollen oder Zoomen bewerten.
+				event.preventDefault();
+			}, false);
+			
+			// Auf Veränderungen der Fensters reagieren.
+			window.addEventListener('resize', resizeCanvas, false);
+			
+			resizeCanvas();
+		</script>
+	</body>
+</html>
+      
