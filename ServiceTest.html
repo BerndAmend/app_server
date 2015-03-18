@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script src="servicelib.js"></script>
+	</head>
+	<body>
+		<script>
+			function addTextNode(text) {
+				var fragment = document.createDocumentFragment();
+				fragment.appendChild(document.createTextNode(text));
+				fragment.appendChild(document.createElement("br"));
+				var node = document.getElementById("output");
+				node.appendChild(fragment);
+			}
+
+			servicelib.on("Test", "beep", function(msg) {
+				addTextNode('Received event beep from Test: ' +  JSON.stringify(msg));
+			});
+
+			servicelib.on("connect", function() {
+				addTextNode("connected");
+				
+				servicelib.request("Test", "ping", { bla: "Nein" }, function(msg) {
+					addTextNode(":) " + JSON.stringify(msg));
+				}, 1000);
+
+				servicelib.request("Test", "ping", { bla: "Ja" }, function(msg) {
+					addTextNode(":) " + JSON.stringify(msg));
+				}, 1000);
+
+				servicelib.request("Test", "bla", { bla: "Ja" }, function(msg) {
+					addTextNode(":) " + JSON.stringify(msg));
+				}, 1000);
+				
+				servicelib.request("Fisch", "wo", { bla: "3142" }, function(msg) {
+					addTextNode(":) " + JSON.stringify(msg));
+				}, 1000);
+			});
+			
+			servicelib.on("disconnect", function() {
+				addTextNode("disconnected");
+			});
+
+		</script>
+
+		<input id="sendOnlyToMe" type="button" value="sendOnlyToMe" onclick="servicelib.request('Test', 'sendOnlyToMe', {});" />
+		<div id="output"></div>
+	</body>
+</html>

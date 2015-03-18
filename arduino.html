@@ -9,15 +9,15 @@
 
 			canvas { display:block; } /* Scrollbar ausblenden */
 		</style>
+		<script src="servicelib.js"></script>
 	</head>
 	<body>
 		<canvas id="myCanvas"></canvas>
 		<script>
-			var socket = new WebSocket("ws://" + location.hostname + ":55777");
 			var canvas = document.getElementById('myCanvas');
 			var ctx = canvas.getContext('2d');
-
-			function updateDevice(x, y) {
+			
+			function updateDevice(x_normalized, y_normalized) {
 				var distance_between_servos_mm = 250;
 				var rod_length_mm = 350;
 
@@ -27,8 +27,8 @@
 				var rod_1_0_deg = 2056;
 				var rod_1_90_deg = 1141;
 
-				x = x*250;
-				y = y*200 + 30;
+				x = x_normalized*250;
+				y = y_normalized*200 + 30;
 				var alpha1 = Math.atan(y/x);
 				var alpha2 = Math.atan(y/(distance_between_servos_mm - x));
 				var alpha1_factor = alpha1 / (Math.PI/2);
@@ -36,7 +36,7 @@
 				var servo1 = Math.round((rod_0_90_deg-rod_0_0_deg)*alpha1_factor + rod_0_0_deg);
 				var servo2 = Math.round((rod_1_90_deg-rod_1_0_deg)*alpha2_factor + rod_1_0_deg);
 				var command = "#0 P" + servo1 + " #2 P" + servo2;
-				socket.send(command);
+				servicelib.request("Arduino", "send", { "data": command }, function(){});
 			}
 
 			function drawBackground() {
