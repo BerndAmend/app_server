@@ -8,12 +8,19 @@ ServiceServer::ServiceServer(quint16 port)
 	QObject::connect(&_server, &QWebSocketServer::newConnection, this, &ServiceServer::onNewWebSocketClientConnection);
 
 	_server.listen(QHostAddress::Any, port);
+
+	QObject::connect(this, &ServiceServer::notifySignal, this, &ServiceServer::notify, Qt::BlockingQueuedConnection);
 }
 
 ServiceServer::~ServiceServer()
 {
 	_server.close();
 	qDeleteAll(_client_lookup.begin(), _client_lookup.end());
+}
+
+void ServiceServer::notifyFromOtherThread(const Service *service, int client, const QString &cmd, const QJsonObject &data)
+{
+	emit notifySignal(service, client, cmd, data);
 }
 
 void ServiceServer::addService(Service *service)

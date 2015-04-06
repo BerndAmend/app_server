@@ -28,6 +28,14 @@ void Service::notify(int client, const QString &cmd, const QJsonObject &obj) {
 		qDebug() << "_server == nullptr";
 }
 
+void Service::notifyFromOtherThread(int client, const QString &cmd, const QJsonObject &obj)
+{
+	if(_server)
+		_server->notifyFromOtherThread(this, client, cmd, obj);
+	else
+		qDebug() << "_server == nullptr";
+}
+
 void Service::commandHandler(int client, const QJsonObject &args, QJsonObject &result)
 {
 	QString cmd = args["cmd"].toString();

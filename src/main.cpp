@@ -1,16 +1,18 @@
-#include <QApplication>
-#include <QQmlApplicationEngine>
+#include <QCoreApplication>
 #include "HttpServer.hpp"
 #include "ArduinoService.hpp"
 
 #include "ServiceServer.hpp"
 #include "TestService.hpp"
+#include "OpenCVCameraService.hpp"
 
 int main(int argc, char *argv[])
 {
-	QApplication app(argc, argv);
+	QCoreApplication app(argc, argv);
 
-	HttpServer server(8080);
+	const QString baseDir = APP_SERVER_SRC_DIR;
+
+	HttpServer server(8080, {baseDir + "/srv"});
 
 	ServiceServer service_server(55777);
 
@@ -19,5 +21,10 @@ int main(int argc, char *argv[])
 
 	ArduinoService arduino_service;
 	service_server.addService(&arduino_service);
+
+#ifdef __linux__
+	OpenCVCameraService camera_service;
+	service_server.addService(&camera_service);
+#endif
 	return app.exec();
 }

@@ -1,14 +1,27 @@
 TEMPLATE = app
 
-QT += qml quick widgets websockets serialport script
-CONFIG += C++11
+CONFIG += C++14
 
-SOURCES += main.cpp \
-	HttpServer.cpp \
-	ServiceServer.cpp \
-	TestService.cpp \
-	Service.cpp \
-    ArduinoService.cpp
+QT += websockets script
+
+!android {
+	DEFINES += HAS_QSERIALPORT
+	QT += serialport
+}
+
+linux {
+	CONFIG +=link_pkgconfig
+	PKGCONFIG += opencv
+}
+
+INCLUDEPATH += src
+
+SOURCES += src/main.cpp \
+	src/HttpServer.cpp \
+	src/ServiceServer.cpp \
+	src/TestService.cpp \
+	src/Service.cpp \
+	src/ArduinoService.cpp
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -17,8 +30,15 @@ QML_IMPORT_PATH =
 include(deployment.pri)
 
 HEADERS += \
-	HttpServer.hpp \
-	ServiceServer.hpp \
-	Service.hpp \
-	TestService.hpp \
-    ArduinoService.hpp
+	src/HttpServer.hpp \
+	src/ServiceServer.hpp \
+	src/Service.hpp \
+	src/TestService.hpp \
+	src/ArduinoService.hpp
+
+linux {
+	HEADERS += src/OpenCVCameraService.hpp
+	SOURCES += src/OpenCVCameraService.cpp
+}
+
+DEFINES += APP_SERVER_SRC_DIR=\\\"$$PWD\\\"

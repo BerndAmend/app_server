@@ -6,8 +6,9 @@
 
 #include "Service.hpp"
 
-class ArduinoService : public Service
+class ArduinoService : public QObject, public Service
 {
+	Q_OBJECT
 public:
 	ArduinoService();
 
@@ -20,6 +21,9 @@ public:
 	void connect();
 
 	QString serialInterface() const;
+
+public slots:
+	void readData();
 
 private:
 

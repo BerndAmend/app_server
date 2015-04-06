@@ -3,6 +3,8 @@
 ArduinoService::ArduinoService()
 	: Service("Arduino")
 {
+	QObject::connect(&serialPort, &QSerialPort::readyRead, this, &ArduinoService::readData);
+
 	connect();
 
 	registerCommand("send", [this](int client, const QJsonObject &args, QJsonObject &result) {
@@ -69,6 +71,14 @@ void ArduinoService::connect() {
 QString ArduinoService::serialInterface() const
 {
 	return m_serialInterface;
+}
+
+void ArduinoService::readData() {
+	while (serialPort.canReadLine()) {
+		QJsonObject obj;
+		obj["data"] = QString::fromUtf8(serialPort.readLine());
+		notify(0, "received", obj);
+	}
 }
 
 //void ArduinoService::setSerialInterface(QString arg)

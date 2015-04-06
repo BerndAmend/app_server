@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script src="servicelib.js"></script>
+		<script src="base64-binary.js"></script>
+	</head>
+	<body>
+		<script>
+			function addTextNode(text) {
+				var fragment = document.createDocumentFragment();
+				fragment.appendChild(document.createTextNode(text));
+				fragment.appendChild(document.createElement("br"));
+				var node = document.getElementById("output");
+				node.appendChild(fragment);
+			}
+
+			servicelib.on("OpenCVCamera", "image", function(msg) {
+				//addTextNode('Received an image from OpenCVCamera: '); // +  JSON.stringify(msg));
+				
+				//var camImage = atob(msg.data);
+				//console.log(camImage.length);
+				var camImage = Base64Binary.decode(msg.data);  
+				
+				var c=document.getElementById("myCanvas");
+				var ctx=c.getContext("2d");
+				var imgData=ctx.createImageData(msg.width,msg.height);
+				var j=0;
+				for (var i=0;i<imgData.data.length;i+=4, j+=3)
+				{
+				imgData.data[i+0]=camImage[j+2];
+				imgData.data[i+1]=camImage[j+1];
+				imgData.data[i+2]=camImage[j+0];
+				imgData.data[i+3]=255;
+				}
+				ctx.putImageData(imgData,0,0);
+			});
+
+			servicelib.on("connect", function() {
+				addTextNode("connected");
+				
+				servicelib.request("OpenCVCamera", "open", { id: 1, width: 320, height: 240, fps: 400 }, function(msg) {
+					addTextNode(":) " + JSON.stringify(msg));
+				}, 1000);
+			});
+			
+			servicelib.on("disconnect", function() {
+				addTextNode("disconnected");
+			});
+
+		</script>
+
+		<canvas id="myCanvas" width="640" height="480"></canvas>
+		<input id="sendOnlyToMe" type="button" value="sendOnlyToMe" onclick="servicelib.request('Test', 'sendOnlyToMe', {});" />
+		<div id="output"></div>
+	</body>
+</html>

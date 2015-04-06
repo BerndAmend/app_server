@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>Flot Examples: Real-time updates</title>
+	<link href="accel.css" rel="stylesheet" type="text/css">
+	<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../../excanvas.min.js"></script><![endif]-->
+	<script language="javascript" type="text/javascript" src="jquery.min.js"></script>
+	<script language="javascript" type="text/javascript" src="jquery.flot.min.js"></script>
+	<script src="servicelib.js"></script>
+	<script type="text/javascript">
+
+	$(function() {
+	
+		var data = [], totalPoints = 800;
+	
+		var plot = $.plot("#placeholder", [ ], {
+			series: {
+				shadowSize: 0	// Drawing is faster without shadows
+			},
+			yaxis: {
+				show: true,
+				min: -35000,
+				max:  35000
+			},
+			xaxis: {
+				show: true,
+				min: 0,
+				max: totalPoints
+			}
+		});
+	
+		servicelib.on("Arduino", "received", function(msg) {
+			if(msg.data.startsWith("data: ")) {
+				var d = msg.data.substr(6).trim().split(" ");
+				//console.log('Received event received from Arduino: ' +  JSON.stringify(d));
+				
+				if (data.length > totalPoints) {
+					data = data.slice(1);
+				}
+				data.push(d);
+				
+				var xaxis = [];
+				var yaxis = [];
+				var zaxis = [];
+
+				for (var i = 0; i < data.length; ++i) {
+					xaxis.push([i, parseInt(data[i][0])]);
+					yaxis.push([i, parseInt(data[i][1])]);
+					zaxis.push([i, parseInt(data[i][2])]);
+				}
+				
+				plot.setData([{label: "x", data: xaxis},
+					{label: "y", data: yaxis},
+					{label: "z", data: zaxis}
+				]);
+
+				// Since the axes don't change, we don't need to call plot.setupGrid()
+
+				plot.draw();
+			}
+		});
+
+		$("#footer").prepend("Flot " + $.plot.version + " &ndash; ");
+	});
+
+	</script>
+</head>
+<body>
+	<div id="content">
+
+		<div class="demo-container">
+			<div id="placeholder" class="demo-placeholder"></div>
+		</div>
+
+	</div>
+
+</body>
+</html>

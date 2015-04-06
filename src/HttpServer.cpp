@@ -1,7 +1,8 @@
 #include "HttpServer.hpp"
 
-HttpServer::HttpServer(quint16 port, QObject *parent)
+HttpServer::HttpServer(quint16 port, const QVector<QString> &paths, QObject *parent)
 	: QTcpServer(parent)
+	, _paths(paths)
 {
 	if(!listen(QHostAddress::Any, port))
 		qDebug() << "Couldn't listen on port";
@@ -35,42 +36,53 @@ void HttpServer::readClient()
 			QString mime_type = "text/html";
 			QByteArray data;
 
-			QString filename = "." + tokens[1];
-			QFileInfo fileinfo { filename };
-			QFile file { fileinfo.fileName() };
-			if(fileinfo.isFile() && fileinfo.isReadable()) {
-				return_code = 200;
-				if(_custom_mime_types.contains(fileinfo.suffix())) {
-					mime_type = _custom_mime_types[fileinfo.suffix()];
-				} else {
-					mime_type = _mime_database.mimeTypeForFile(fileinfo).name();
+			for(const auto &path : _paths) {
+				QString filename = QDir::cleanPath(path + "/" + tokens[1]);
+
+				if(!filename.startsWith(path)) {
+					return_code = 403;
 				}
 
-				if (file.open(QIODevice::ReadOnly)) {
-					data = file.readAll();
+				QFileInfo fileinfo { filename };
+				QFile file { fileinfo.filePath() };
+				if(fileinfo.isFile() && fileinfo.isReadable()) {
+					return_code = 200;
+					if(_custom_mime_types.contains(fileinfo.suffix())) {
+						mime_type = _custom_mime_types[fileinfo.suffix()];
+					} else {
+						mime_type = _mime_database.mimeTypeForFile(fileinfo).name();
+					}
+
+					if (file.open(QIODevice::ReadOnly)) {
+						data = file.readAll();
+					} else {
+						//qDebug()<<file.errorString();
+						return_code = 404;
+					}
+				} else if(fileinfo.isDir()) {
+					QTextStream os(&data);
+					return_code = 200;
+					os << "<!doctype html>\n"
+						  "<html>\n"
+						  "<head>\n"
+						  "<meta charset=\"utf-8\">\n"
+						  "<title>Index of " << fileinfo.fileName() << "</title>\n"
+																	   "</head>\n"
+																	   "<body>\n"
+																	   "<h1>Index of " << fileinfo.fileName() << "</h1>\n\n";
+
+					for(const auto &file : QDir(fileinfo.filePath()).entryInfoList()) {
+						os  << "<a href=\"" << file.fileName() << "\">" << file.fileName() << "</a><br>";
+					}
+
+					os << "</body></html>";
+
 				} else {
 					return_code = 404;
 				}
-			} else if(fileinfo.isDir()) {
-				QTextStream os(&data);
-				return_code = 200;
-				os << "<!doctype html>\n"
-					  "<html>\n"
-					  "<head>\n"
-					  "<meta charset=\"utf-8\">\n"
-					  "<title>Index of " << fileinfo.fileName() << "</title>\n"
-																   "</head>\n"
-																   "<body>\n"
-																   "<h1>Index of " << fileinfo.fileName() << "</h1>\n\n";
 
-				for(const auto &file : QDir(fileinfo.fileName()).entryInfoList()) {
-					os  << "<a href=\"" << file.fileName() << "\">" << file.fileName() << "</a><br>";
-				}
-
-				os << "</body></html>";
-
-			} else {
-				return_code = 404;
+				if(return_code == 200)
+					break;
 			}
 
 			{

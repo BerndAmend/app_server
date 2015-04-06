@@ -26,6 +26,7 @@ protected:
 
 	// client == 0: broadcast
 	void notify(int client, const QString &cmd, const QJsonObject &obj);
+	void notifyFromOtherThread(int client, const QString &cmd, const QJsonObject &obj);
 
 	virtual void disconnected(int client) = 0;
 

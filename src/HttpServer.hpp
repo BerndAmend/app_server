@@ -15,7 +15,7 @@
  {
 	 Q_OBJECT
  public:
-	 HttpServer(quint16 port, QObject* parent = 0);
+	 HttpServer(quint16 port, const QVector<QString> &paths, QObject* parent = 0);
 
 	 void incomingConnection(qintptr socket) override;
 
@@ -25,6 +25,7 @@
 	 void discardClient();
 
  private:
+	QVector<QString> _paths;
 	QMimeDatabase _mime_database;
 
 	QMap<QString, QString> _custom_mime_types = {{"fs", "application/sforth"}};
